@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Initialize Gemini
+// ✅ Initialize Gemini with the API Key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.use(cors({
@@ -61,7 +61,6 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
-// Nagarik AI Route - FIXED MODEL NAME
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   
@@ -70,24 +69,29 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    // ✅ Use 'gemini-1.5-flash' - this is the standard stable identifier
-    const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // ✅ FIX: Use the stable model identifier. 
+    // If you are still seeing v1beta 404s, ensure you have run 'npm install @google/generative-ai@latest'
+    const aiModel = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+    });
     
+    // Ensure history is correctly formatted for the SDK
     const chat = aiModel.startChat({
       history: Array.isArray(history) ? history : [],
-      systemInstruction: {
-        parts: [{ text: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise." }]
-      }
+      generationConfig: {
+        maxOutputTokens: 500,
+      },
+      systemInstruction: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise."
     });
 
     const result = await chat.sendMessage(message);
     const response = await result.response;
     res.json({ reply: response.text() });
+
   } catch (err) {
     console.error("AI Error Detailed:", err);
-    // Return a more descriptive error if possible
     res.status(500).json({ 
-      reply: "AI Connection Error.",
+      reply: "Nagarik AI is having trouble connecting to Google services.",
       error: err.message 
     });
   }
