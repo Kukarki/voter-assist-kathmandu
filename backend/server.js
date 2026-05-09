@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Initialize Gemini with the API Key
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.use(cors({
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
   res.send('Voter Assist API is live and running.');
 });
 
-// --- ROUTES ---
+// --- API ROUTES ---
 
 app.patch('/api/candidates/:id/support', async (req, res) => {
   try {
@@ -61,37 +61,41 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
+// Nagarik AI Route - CORRECTED SYSTEM INSTRUCTION FORMAT
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   
   if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ reply: "Server configuration error: Missing API Key." });
+    return res.status(500).json({ reply: "API Key missing." });
   }
 
   try {
-    // ✅ FIX: Use the stable model identifier. 
-    // If you are still seeing v1beta 404s, ensure you have run 'npm install @google/generative-ai@latest'
+    // ✅ FIX: systemInstruction must be passed here, and must be an object with parts
     const aiModel = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise." }]
+      }
     });
     
-    // Ensure history is correctly formatted for the SDK
+    const chatHistory = Array.isArray(history) ? history : [];
+
+    // startChat no longer needs the systemInstruction since it's defined in the model above
     const chat = aiModel.startChat({
-      history: Array.isArray(history) ? history : [],
-      generationConfig: {
-        maxOutputTokens: 500,
-      },
-      systemInstruction: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise."
+      history: chatHistory
     });
 
     const result = await chat.sendMessage(message);
     const response = await result.response;
-    res.json({ reply: response.text() });
+    const text = response.text();
+    
+    res.json({ reply: text });
 
   } catch (err) {
     console.error("AI Error Detailed:", err);
     res.status(500).json({ 
-      reply: "Nagarik AI is having trouble connecting to Google services.",
+      reply: "The AI service is having trouble. Please try again in 30 seconds.",
       error: err.message 
     });
   }
