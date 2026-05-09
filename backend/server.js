@@ -2,10 +2,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-require('dotenv').config();
+
+// 1. Only load dotenv locally. On Render, variables are injected automatically.
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const app = express();
-const PORT = 5000;
+
+// 2. IMPORTANT: Render assigns a dynamic port. Default to 5000 for local dev.
+const PORT = process.env.PORT || 10000;
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -13,15 +19,22 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// 3. MongoDB Connection with enhanced error logging
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connected to Kathmandu Voter DB'))
-  .catch((err) => console.error('❌ MongoDB Connection Error:', err));
+  .catch((err) => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+    // If this fails on Render, check your Atlas IP Whitelist (0.0.0.0/0)
+  });
 
 const Candidate = require('./models/Candidate');
 
-// --- NEW SUPPORT/VOTE ROUTE ---
-// This uses atomic increment ($inc) to prevent data loss
+// Health Check Route (Helps Render confirm the service is live)
+app.get('/', (req, res) => {
+  res.send('Voter Assist API is live and running.');
+});
+
+// --- SUPPORT/VOTE ROUTE ---
 app.patch('/api/candidates/:id/support', async (req, res) => {
   try {
     const updatedCandidate = await Candidate.findByIdAndUpdate(
@@ -30,7 +43,6 @@ app.patch('/api/candidates/:id/support', async (req, res) => {
       { new: true }
     );
     if (!updatedCandidate) return res.status(404).json({ message: "Candidate not found" });
-    console.log(`🗳️ Support recorded for: ${updatedCandidate.name}`);
     res.json(updatedCandidate);
   } catch (err) {
     res.status(500).json({ message: "Failed to register support" });
@@ -55,7 +67,7 @@ app.post('/api/chat', async (req, res) => {
     const chat = aiModel.startChat({
       history: history || [],
       systemInstruction: {
-        parts: [{ text: "You are Nagarik AI Assistant (May 2026). Professional and concise." }]
+        parts: [{ text: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise." }]
       }
     });
     const result = await chat.sendMessage(message);
@@ -66,6 +78,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
+// 4. Start the Server - Listen on '0.0.0.0' so Render can detect the port
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server live on port ${PORT}`);
 });
