@@ -10,7 +10,6 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.use(cors({
@@ -38,20 +37,6 @@ app.get('/', (req, res) => {
 
 // --- API ROUTES ---
 
-app.patch('/api/candidates/:id/support', async (req, res) => {
-  try {
-    const updatedCandidate = await Candidate.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { votes: 1 } }, 
-      { new: true }
-    );
-    if (!updatedCandidate) return res.status(404).json({ message: "Candidate not found" });
-    res.json(updatedCandidate);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to register support" });
-  }
-});
-
 app.get('/api/candidates', async (req, res) => {
   try {
     const candidates = await Candidate.find().sort({ votes: -1 });
@@ -61,7 +46,6 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
-// Nagarik AI Route - CORRECTED SYSTEM INSTRUCTION FORMAT
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   
@@ -70,23 +54,22 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    // ✅ FIX: systemInstruction must be passed here, and must be an object with parts
+    // ✅ FIX: Use the full versioned model path to bypass naming conflicts
     const aiModel = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: {
-        role: "system",
-        parts: [{ text: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise." }]
-      }
+      model: "models/gemini-1.5-flash" 
     });
     
     const chatHistory = Array.isArray(history) ? history : [];
 
-    // startChat no longer needs the systemInstruction since it's defined in the model above
     const chat = aiModel.startChat({
       history: chatHistory
     });
 
-    const result = await chat.sendMessage(message);
+    // Moving system instruction into the prompt itself to maximize compatibility
+    const systemPrompt = `System: You are Nagarik AI Assistant for Kathmandu Elections. Professional and concise.
+    User: ${message}`;
+
+    const result = await chat.sendMessage(systemPrompt);
     const response = await result.response;
     const text = response.text();
     
@@ -95,7 +78,7 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error("AI Error Detailed:", err);
     res.status(500).json({ 
-      reply: "The AI service is having trouble. Please try again in 30 seconds.",
+      reply: "The AI service is temporarily unavailable. Check your Render logs.",
       error: err.message 
     });
   }
