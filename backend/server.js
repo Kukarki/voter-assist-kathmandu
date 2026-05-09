@@ -10,18 +10,17 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ✅ UPDATE: Improved CORS to allow Vercel to talk to Render
 app.use(cors({
-  origin: '*', // Allows all domains; use this to fix the connection error
+  origin: '*', 
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type']
 }));
 
 app.use(express.json());
 
-// ✅ UPDATE: Added timeout options to prevent connection "hanging"
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 5000, 
   socketTimeoutMS: 45000,
@@ -36,6 +35,8 @@ const Candidate = require('./models/Candidate');
 app.get('/', (req, res) => {
   res.send('Voter Assist API is live and running.');
 });
+
+// --- ROUTES ---
 
 app.patch('/api/candidates/:id/support', async (req, res) => {
   try {
@@ -60,22 +61,35 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
+// Nagarik AI Route - FIXED MODEL NAME
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
+  
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ reply: "Server configuration error: Missing API Key." });
+  }
+
   try {
+    // ✅ Use 'gemini-1.5-flash' - this is the standard stable identifier
     const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
     const chat = aiModel.startChat({
-      history: history || [],
+      history: Array.isArray(history) ? history : [],
       systemInstruction: {
         parts: [{ text: "You are Nagarik AI Assistant. You provide helpful info about Kathmandu elections. Professional and concise." }]
       }
     });
+
     const result = await chat.sendMessage(message);
     const response = await result.response;
     res.json({ reply: response.text() });
   } catch (err) {
-    console.error("AI Error:", err);
-    res.status(500).json({ reply: "AI Connection Error." });
+    console.error("AI Error Detailed:", err);
+    // Return a more descriptive error if possible
+    res.status(500).json({ 
+      reply: "AI Connection Error.",
+      error: err.message 
+    });
   }
 });
 
