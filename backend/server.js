@@ -1,46 +1,71 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
-
-const Candidate = require('./models/Candidate');
 
 const app = express();
 const PORT = 5000;
 
-// 1. MUST BE FIRST: Allow the Vite app (Port 5173) to talk to us
-app.use(cors()); 
-app.use(express.json()); 
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 2. Connect to MongoDB Atlas
-const uri = process.env.MONGODB_URI;
-mongoose.connect(uri)
-  .then(() => console.log('Successfully connected to Kathmandu Voter DB!'))
-  .catch((err) => console.error('Connection error:', err));
+app.use(cors());
+app.use(express.json());
 
-// 3. The Vote Route - Handles the "Show Support" button
-app.post('/api/candidates/vote', async (req, res) => {
-  const { id, name } = req.body;
-  console.log(`--- VOTE RECEIVED --- Candidate: ${name} (ID: ${id})`);
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ Connected to Kathmandu Voter DB'))
+  .catch((err) => console.error('❌ MongoDB Connection Error:', err));
 
+const Candidate = require('./models/Candidate');
+
+// --- NEW SUPPORT/VOTE ROUTE ---
+// This uses atomic increment ($inc) to prevent data loss
+app.patch('/api/candidates/:id/support', async (req, res) => {
   try {
-    const updatedCandidate = await Candidate.findOneAndUpdate(
-      { name: name }, 
-      { $inc: { votes: 1 }, $set: { id: id } }, 
-      { upsert: true, new: true }
+    const updatedCandidate = await Candidate.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { votes: 1 } }, 
+      { new: true }
     );
-    res.status(200).json({ message: "Vote saved!", data: updatedCandidate });
+    if (!updatedCandidate) return res.status(404).json({ message: "Candidate not found" });
+    console.log(`🗳️ Support recorded for: ${updatedCandidate.name}`);
+    res.json(updatedCandidate);
   } catch (err) {
-    console.error("Database Error:", err);
-    res.status(500).json({ message: "Failed to save vote" });
+    res.status(500).json({ message: "Failed to register support" });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Voter Assist Kathmandu Server is Live!');
+// Candidate GET Route
+app.get('/api/candidates', async (req, res) => {
+  try {
+    const candidates = await Candidate.find().sort({ votes: -1 });
+    res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ message: "Database Error" });
+  }
 });
 
-// 4. Force IPv4 (127.0.0.1) to fix connection issues
+// Nagarik AI Route
+app.post('/api/chat', async (req, res) => {
+  const { message, history } = req.body;
+  try {
+    const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const chat = aiModel.startChat({
+      history: history || [],
+      systemInstruction: {
+        parts: [{ text: "You are Nagarik AI Assistant (May 2026). Professional and concise." }]
+      }
+    });
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    res.json({ reply: response.text() });
+  } catch (err) {
+    res.status(500).json({ reply: "AI Connection Error." });
+  }
+});
+
 app.listen(PORT, "127.0.0.1", () => {
-  console.log(`Server is running on http://127.0.0.1:${PORT}`);
+  console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
 });

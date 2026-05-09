@@ -1,16 +1,41 @@
-# React + Vite
+# Voter Assist Kathmandu 2026 🗳️🇳🇵
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance, bilingual civic engagement portal built with the **MERN stack** and **Google Gemini AI**. Designed to centralize election data and provide real-time guidance for the 2026 Kathmandu General Elections.
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
+[Insert Link to Hosted Site here, e.g., on Render or Vercel]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠️ Technical Highlights
 
-## React Compiler
+* **Advanced Localization:** Implemented a scalable bilingual engine using `react-i18next`, moving away from hard-coded strings to support seamless English/Nepali transitions.
+* **AI-Powered Guidance:** Integrated **Gemini 1.5 Flash** with custom system prompting to provide localized, real-time voter assistance.
+* **Data Integrity:** Developed a RESTful API using **Node.js/Express** with atomic MongoDB increments (`$inc`) to manage high-concurrency candidate support registration.
+* **Optimized Performance:** Utilized **Vite** for optimized frontend builds and implemented MongoDB indexing for sub-second voter ID search results.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🏗️ System Architecture
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+[Image of MERN stack architecture diagram]
+
+
+The application follows a decoupled full-stack architecture:
+1.  **Frontend:** React (Vite) for a fast, responsive User Interface.
+2.  **Backend:** Node.js & Express handling business logic and AI integration.
+3.  **Database:** MongoDB Atlas for cloud-native document storage.
+4.  **Security:** Protected API keys via environment variables and CORS protocols.
+
+## 📂 Project Structure
+```text
+/voter-assist-kathmandu
+├── /backend
+│   ├── /models       # Mongoose Data Schemas
+│   ├── server.js     # Express API & AI Logic
+│   └── .env.example  # Template for environment variables
+├── /frontend
+│   ├── /src
+│   │   ├── /components # Reusable UI Components
+│   │   ├── i18n.js     # Localization Config
+│   │   └── App.jsx     # Main Routing
+│   └── vite.config.js
+└── README.md

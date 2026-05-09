@@ -1,0 +1,100 @@
+/* Existing Ticker & Hover Styles */
+.ticker-container {
+  background: #fff3cd;
+  border-bottom: 1px solid #ffeeba;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 8px 0;
+}
+
+.ticker-text {
+  display: inline-block;
+  font-weight: 500;
+  font-size: 0.9rem;
+  animation: marquee 25s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.hover-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, #1b365d 0%, #2a5298 100%);
+}
+
+/* --- NEW: Nagarik Bot Specific Styles --- */
+
+.chatbot-wrapper {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Chat Window Animation */
+.chatbot-wrapper .card {
+  animation: slideUp 0.4s ease-out;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Message Bubble Styling */
+.chatbot-wrapper .card-body div {
+  padding: 10px 14px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* User Bubble (Right) */
+.chatbot-wrapper .bg-primary {
+  border-bottom-right-radius: 2px !important;
+}
+
+/* Bot Bubble (Left) */
+.chatbot-wrapper .bg-white {
+  border-bottom-left-radius: 2px !important;
+}
+
+/* Floating Button Pulsing Effect */
+.chatbot-wrapper .btn-primary.rounded-circle {
+  background-color: #1b365d;
+  border: none;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 15px rgba(27, 54, 93, 0.4);
+}
+
+.chatbot-wrapper .btn-primary.rounded-circle:hover {
+  background-color: #2a5298;
+  transform: scale(1.1);
+}
+
+/* Custom Scrollbar for the Chat Body */
+.chatbot-wrapper .card-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chatbot-wrapper .card-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chatbot-wrapper .card-body::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
