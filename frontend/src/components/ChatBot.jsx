@@ -14,6 +14,9 @@ function ChatBot({ isOpen, setIsOpen }) {
   const [history, setHistory] = useState([]); 
   const scrollRef = useRef(null);
 
+  // ✅ CONSTANT FOR YOUR LIVE BACKEND
+  const BASE_URL = "https://voter-assist-kathmandu.onrender.com";
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -30,7 +33,8 @@ function ChatBot({ isOpen, setIsOpen }) {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/chat', {
+      // ✅ Fetching from the Render API instead of localhost
+      const response = await fetch(`${BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -52,7 +56,7 @@ function ChatBot({ isOpen, setIsOpen }) {
     } catch (error) {
       console.error("Chat Error:", error);
       setMessages(prev => [...prev, { 
-        text: "The Nagarik AI is having trouble connecting. Is your backend server running?", 
+        text: "Nagarik AI is taking a moment to wake up. Please wait 30 seconds and try again.", 
         sender: 'bot' 
       }]);
     } finally {
@@ -62,19 +66,17 @@ function ChatBot({ isOpen, setIsOpen }) {
 
   return (
     <div className="chatbot-wrapper" style={{ position: 'fixed', bottom: '25px', right: '25px', zIndex: 1050 }}>
-      {/* Toggle Button shows when the chat is CLOSED */}
       {!isOpen && (
         <Button 
           variant="primary" 
           className="rounded-circle shadow-lg border-0 d-flex align-items-center justify-content-center" 
-          onClick={() => setIsOpen(true)} // Updates the state in App.jsx
+          onClick={() => setIsOpen(true)}
           style={{ width: '65px', height: '65px', fontSize: '1.8rem', transition: 'transform 0.2s' }}
         >
           💬
         </Button>
       )}
 
-      {/* Chat Window shows when isOpen is TRUE (from App.jsx) */}
       {isOpen && (
         <Card className="shadow-lg border-0 overflow-hidden" style={{ width: '360px', borderRadius: '15px', animation: 'slideUp 0.3s ease-out' }}>
           <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center py-3">
@@ -85,7 +87,7 @@ function ChatBot({ isOpen, setIsOpen }) {
             <Button 
               variant="link" 
               className="text-white p-0 text-decoration-none fs-4" 
-              onClick={() => setIsOpen(false)} // Closes the chat everywhere
+              onClick={() => setIsOpen(false)}
             >
               &times;
             </Button>
