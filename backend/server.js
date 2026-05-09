@@ -3,38 +3,40 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// 1. Only load dotenv locally. On Render, variables are injected automatically.
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
 const app = express();
-
-// 2. IMPORTANT: Render assigns a dynamic port. Default to 5000 for local dev.
 const PORT = process.env.PORT || 10000;
 
-// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.use(cors());
+// ✅ UPDATE: Improved CORS to allow Vercel to talk to Render
+app.use(cors({
+  origin: '*', // Allows all domains; use this to fix the connection error
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 
-// 3. MongoDB Connection with enhanced error logging
-mongoose.connect(process.env.MONGODB_URI)
+// ✅ UPDATE: Added timeout options to prevent connection "hanging"
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, 
+  socketTimeoutMS: 45000,
+})
   .then(() => console.log('✅ Connected to Kathmandu Voter DB'))
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err.message);
-    // If this fails on Render, check your Atlas IP Whitelist (0.0.0.0/0)
   });
 
 const Candidate = require('./models/Candidate');
 
-// Health Check Route (Helps Render confirm the service is live)
 app.get('/', (req, res) => {
   res.send('Voter Assist API is live and running.');
 });
 
-// --- SUPPORT/VOTE ROUTE ---
 app.patch('/api/candidates/:id/support', async (req, res) => {
   try {
     const updatedCandidate = await Candidate.findByIdAndUpdate(
@@ -49,7 +51,6 @@ app.patch('/api/candidates/:id/support', async (req, res) => {
   }
 });
 
-// Candidate GET Route
 app.get('/api/candidates', async (req, res) => {
   try {
     const candidates = await Candidate.find().sort({ votes: -1 });
@@ -59,7 +60,6 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
-// Nagarik AI Route
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body;
   try {
@@ -74,11 +74,11 @@ app.post('/api/chat', async (req, res) => {
     const response = await result.response;
     res.json({ reply: response.text() });
   } catch (err) {
+    console.error("AI Error:", err);
     res.status(500).json({ reply: "AI Connection Error." });
   }
 });
 
-// 4. Start the Server - Listen on '0.0.0.0' so Render can detect the port
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server live on port ${PORT}`);
 });
